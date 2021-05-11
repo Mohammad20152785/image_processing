@@ -1,0 +1,167 @@
+# project 1
+# This project find the similarity between referance img and input img by calculating with ORB and SSIM algorithms
+#######################################################################################
+
+from skimage.metrics import structural_similarity
+from skimage.transform import resize
+import matplotlib.pyplot as plt
+import numpy as np
+import cv2
+
+# ORB is a descriptive algorithm which detects features of the image
+# Using Hamming distance Similarity calculation
+# bf = Broute Force technic or Algorithm
+
+
+def orb_sim(img1, img2):
+    
+    orb = cv2.ORB_create()
+    kp1, desc_a = orb.detectAndCompute(img1, None)
+    kp2, desc_b = orb.detectAndCompute(img2, None)
+  
+    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+    matches = bf.match(desc_a, desc_b)
+    similar_regions = [i for i in matches if i.distance < 50] #  1 to 100( choosing interm of your desire output)
+    if len(matches) == 0:
+        return 0
+    else:
+        return len(similar_regions)/ len(matches)
+        
+        
+        
+#Structural similarity (ssim)
+#SSIM - groups of pixels
+#ssim(A,B) = luminence(A,B), contrast(A,B), structural(A,B)
+
+def structural_sim(img1, img2):
+    img1 = img1.astype(np.uint8)
+    img2 = img2.astype(np.uint8)
+    sim, diff = structural_similarity(img1, img2, full = True)
+    return sim
+        
+        
+img1=cv2.imread('C:/Users/Akash/Desktop/images/f16_template.jpg', 0)
+img2 =cv2.imread('C:/Users/Akash/Desktop/images/f16.jpg', 0)
+
+img3=cv2.imread('C:/Users/Akash/Desktop/images/1.jpg', 0)
+img4 =cv2.imread('C:/Users/Akash/Desktop/images/2.jpg', 0)
+
+img5=cv2.imread('C:/Users/Akash/Desktop/images/test_image.jpg', 0)
+img6 =cv2.imread('C:/Users/Akash/Desktop/images/test_image_cropped.jpg', 0)
+
+        
+orb_similarity = orb_sim(img5, img6)
+print('Similarity using ORB is: ', orb_similarity) 
+img7 = resize(img6, (img5.shape[0], img5.shape[1]), anti_aliasing = True)
+ssim = structural_sim(img5, img5 )
+print('Similarity using ssim is:', ssim)
+
+
+similarity = (orb_similarity + ssim) / 2 
+print( 'The similarity of between two images is: ', similarity)      
+        
+#The similarity of between two images is:  0.5392393316919177        
+        
+if similarity >=.0 and similarity <.5:
+    print('Inperfect Matches')
+elif similarity >= 0.5 and similarity < 1.0:
+     print('Good Matches')
+elif similarity >= 1.0:
+    print('Perfect Matches')        
+        
+  #Good Matches     
+        
+        
+##########################################################################################################
+#prject 2
+
+# This project find the similarity using Brute Force Hamming technic distance macher from keypionts of descriptors
+import cv2
+import numpy as np        
+        
+im1 = cv2.imread('C:/Users/Akash/Desktop/images/f16.jpg')
+im2 = cv2.imread('C:/Users/Akash/Desktop/images/f16_template.jpg')  
+
+img1 = cv2.cvtColor(im1, cv2.COLOR_BGR2GRAY)
+img2 = cv2.cvtColor(im2, cv2.COLOR_BGR2GRAY)       
+orb = cv2.ORB_create(50)       
+        
+kp1, desc1 = orb.detectAndCompute(img1, None)
+kp2, desc2 = orb.detectAndCompute(img2, None)        
+        
+        
+matcher = cv2.DescriptorMatcher_create(cv2.DESCRIPTOR_MATCHER_BRUTEFORCE_HAMMING)
+matches = matcher.match(desc1, desc2, None)
+matches = sorted(matches, key=lambda x:x.distance)        
+        
+img4 = cv2.drawMatches(img1, kp1, img2, kp2, matches[:20], None)        
+img4 = cv2.drawMatches(img1, kp1, img2, kp2, matches[:20], None)   
+
+points1 = np.zeros((len(matches), 1), dtype = np.float32)  
+points2 = np.zeros((len(matches), 2), dtype = np.float32)        
+
+
+for i, match in enumerate(matches):
+    points1[i, :] = kp1[match.queryIdx].pt
+    points2[i, :] = kp1[match.queryIdx].pt
+
+
+h , mask = cv2.findHomography(points1, points2, cv2.RANSAC)
+
+height, width, channels = im2.shape
+
+imReg = cv2.warpPerspective(im1, h, (width, height) )
+
+img3 = cv2.drawMatches(im1, kp1, im2, kp2, matches[:500], None)
+cv2.imshow('Keypoints metches', img3)
+cv2.imshow('Registered metches', imReg)
+cv2.imshow('Registered metches', img4)
+
+cv2.waitKey(0)
+
+
+
+###########################################################################################################################
+# project 3
+# This project for text extracting from image using OCR-keras library
+pip install keras_ocr
+
+import matplotlib.pyplot as plt
+import keras_ocr
+
+pipeline = keras_ocr.pipeline.Pipeline()
+
+images = [
+ keras_ocr.tools.read(images) for images in [
+      '/content/drive/MyDrive/Colab Notebooks/My_assignment/text2.jpg',
+      '/content/drive/MyDrive/Colab Notebooks/My_assignment/text3.jpg'
+  ]
+]
+
+
+from google.colab import drive
+drive.mount('/content/drive')
+
+import numpy as np
+print(np.shape(images))
+        
+        
+prediction_groups = pipeline.recognize(images)
+
+fig, axs = plt.subplots(nrows=len(images), figsize=(20, 20))
+for ax, image, predictions in zip(axs, images, prediction_groups):
+    keras_ocr.tools.drawAnnotations(image=image, predictions=predictions, ax=ax)        
+        
+        
+        
+        
+  
+
+
+
+
+
+
+
+        
+        
